@@ -1,7 +1,20 @@
 wechat [![NPM version](https://badge.fury.io/js/wechat.png)](http://badge.fury.io/js/wechat) [![Build Status](https://travis-ci.org/node-webot/wechat.png?branch=master)](https://travis-ci.org/node-webot/wechat) [![Dependencies Status](https://david-dm.org/node-webot/wechat.png)](https://david-dm.org/node-webot/wechat) [![Coverage Status](https://coveralls.io/repos/node-webot/wechat/badge.png)](https://coveralls.io/r/node-webot/wechat)
 ======
 
-微信公共平台消息接口服务中间件
+微信公共平台消息接口服务中间件与API SDK
+
+## 功能列表
+- 自动回复（文本、图片、语音、视频、音乐、图文）
+- 客服消息（文本、图片、语音、视频、音乐、图文）
+- 菜单操作（查询、创建、删除）
+- 二维码（创建临时、永久二维码，查看二维码URL）
+- 分组操作（查询、创建、修改、移动用户到分组）
+- 用户信息（查询用户基本信息、获取关注者列表）
+- 媒体文件（上传、获取）
+- 等待回复（用于调查问卷、问答等场景）
+- 会话支持（创新功能）
+
+详细参见[API文档](http://node-webot.github.io/wechat/api.html)
 
 ## Installation
 
@@ -49,6 +62,64 @@ app.use('/wechat', wechat('some token', function (req, res, next) {
 }));
 ```
 备注：token在[微信平台上申请](http://mp.weixin.qq.com/cgi-bin/callbackprofile?type=info&t=wxm-developer-ahead&lang=zh_CN)
+
+### 回复消息
+当用户发送消息到微信公众账号，自动回复一条消息。这条消息可以是文本、图片、语音、视频、音乐、图文。详见：[官方文档](http://mp.weixin.qq.com/wiki/index.php?title=发送被动响应消息)
+
+#### 回复文本
+```
+res.reply('Hello world!');
+// 或者
+res.reply({type: "text", content: 'Hello world!'});
+```
+#### 回复图片
+```
+res.reply({
+  type: "image",
+  content: {
+    mediaId: 'mediaId'
+  }
+});
+```
+#### 回复语音
+```
+res.reply({
+  type: "voice",
+  content: {
+    mediaId: 'mediaId'
+  }
+});
+```
+#### 回复视频
+```
+res.reply({
+  type: "video",
+  content: {
+    mediaId: 'mediaId',
+    thumbMediaId: 'thumbMediaId'
+  }
+});
+```
+#### 回复音乐
+```
+res.reply({
+  title: "来段音乐吧",
+  description: "一无所有",
+  musicUrl: "http://mp3.com/xx.mp3",
+  hqMusicUrl: "http://mp3.com/xx.mp3"
+});
+```
+#### 回复图文
+```
+res.reply([
+  {
+    title: '你来我家接我吧',
+    description: '这是女神与高富帅之间的对话',
+    picurl: 'http://nodeapi.cloudfoundry.com/qrcode.jpg',
+    url: 'http://nodeapi.cloudfoundry.com/'
+  }
+]);
+```
 
 ### WXSession支持
 由于公共平台应用的客户端实际上是微信，所以采用传统的Cookie来实现会话并不现实，为此中间件模块在openid的基础上添加了Session支持。一旦服务端启用了`connect.session`中间件，在业务中就可以访问`req.wxsession`属性。这个属性与`req.session`行为类似。
@@ -126,74 +197,6 @@ List.add('view', [
 
 如果用户触发等待回复事务后，没有按照`{}`中的进行回复，那么将会由原有的默认函数进行处理。在原有函数中，可以选择调用`res.nowait()`中断事务。`nowait()`除了能中断事务外，与`reply`的行为一致。
 
-### 菜单操作
-#### 获取口令
-获取访问口令，用于进一步操作菜单。
-
-```
-var API = require('wechat').API;
-var api = new API('appid', 'secret');
-api.getAccessToken(function (err, token) {
-  // token
-  // {"access_token":"ACCESS_TOKEN","expires_in":7200}
-});
-```
-
-#### 创建菜单
-获取口令之后，就能创建菜单了。
-
-```
-var menu =  {
-  "button":[
-    {  
-      "type":"click",
-      "name":"今日歌曲",
-      "key":"V1001_TODAY_MUSIC"
-    },
-    {
-      "type":"click",
-      "name":"歌手简介",
-      "key":"V1001_TODAY_SINGER"
-    },
-    {
-      "name":"菜单",
-      "sub_button":[
-        {
-          "type":"click",
-          "name":"hello word",
-          "key":"V1001_HELLO_WORLD"
-        },
-        {
-          "type":"click",
-          "name":"赞一下我们",
-          "key":"V1001_GOOD"
-        }
-      ]
-  }]
-};
-api.createMenu(menu, function (err, data) {
-  // TODO
-});
-```
-
-#### 获取菜单
-创建菜单之后，就可以获取菜单了：
-
-```
-api.getMenu(function (err, menu) {
-  // menu
-});
-```
-
-#### 删除菜单
-也可以删除掉菜单：
-
-```
-api.removeMenu(function (err, data) {
-  // TODO
-});
-```
-
 ## Show cases
 ### Node.js API自动回复
 
@@ -206,10 +209,10 @@ api.removeMenu(function (err, data) {
 你可以在[CloudFoundry](http://www.cloudfoundry.com/)、[appfog](https://www.appfog.com/)、[BAE](http://developer.baidu.com/wiki/index.php?title=docs/cplat/rt/node.js)等搭建自己的机器人。
 
 ## 详细API
-原始API文档请参见：[消息接口指南](http://mp.weixin.qq.com/wiki/index.php?title=%E6%B6%88%E6%81%AF%E6%8E%A5%E5%8F%A3%E6%8C%87%E5%8D%97)。
+原始API文档请参见：[消息接口指南](http://mp.weixin.qq.com/wiki/index.php?title=消息接口指南)。
 
-目前微信公共平台能接收到6种内容：文字、图片、位置、音频、事件、链接。其中音频还未正式开放。支持三种回复：纯文本、图文、音乐。
-针对目前的业务形态，发布了0.3.x版本，该版本支持六种内容分别处理，以保持业务逻辑的简洁性。
+目前微信公共平台能接收到7种内容：文字、图片、音频、视频、位置、链接、事件。支持6种回复：纯文本、图文、音乐、音频、图片、视频。
+针对目前的业务形态，发布了0.6.x版本，该版本支持六种内容分别处理，以保持业务逻辑的简洁性。
 
 ```
 app.use('/wechat', wechat('some token', wechat.text(function (message, req, res, next) {
@@ -227,7 +230,26 @@ app.use('/wechat', wechat('some token', wechat.text(function (message, req, res,
   // CreateTime: '1359124971',
   // MsgType: 'image',
   // PicUrl: 'http://mmsns.qpic.cn/mmsns/bfc815ygvIWcaaZlEXJV7NzhmA3Y2fc4eBOxLjpPI60Q1Q6ibYicwg/0',
+  // MediaId: 'media_id',
   // MsgId: '5837397301622104395' }
+}).voice(function (message, req, res, next) {
+  // message为音频内容
+  // { ToUserName: 'gh_d3e07d51b513',
+  // FromUserName: 'oPKu7jgOibOA-De4u8J2RuNKpZRw',
+  // CreateTime: '1359125022',
+  // MsgType: 'voice',
+  // MediaId: 'OMYnpghh8fRfzHL8obuboDN9rmLig4s0xdpoNT6a5BoFZWufbE6srbCKc_bxduzS',
+  // Format: 'amr',
+  // MsgId: '5837397520665436492' }
+}).video(function (message, req, res, next) {
+  // message为视频内容
+  // { ToUserName: 'gh_d3e07d51b513',
+  // FromUserName: 'oPKu7jgOibOA-De4u8J2RuNKpZRw',
+  // CreateTime: '1359125022',
+  // MsgType: 'video',
+  // MediaId: 'OMYnpghh8fRfzHL8obuboDN9rmLig4s0xdpoNT6a5BoFZWufbE6srbCKc_bxduzS',
+  // ThumbMediaId: 'media_id',
+  // MsgId: '5837397520665436492' }
 }).location(function (message, req, res, next) {
   // message为位置内容
   // { ToUserName: 'gh_d3e07d51b513',
@@ -239,16 +261,6 @@ app.use('/wechat', wechat('some token', wechat.text(function (message, req, res,
   // Scale: '15',
   // Label: {},
   // MsgId: '5837398761910985062' }
-}).voice(function (message, req, res, next) {
-  // message为音频内容
-  // 微信官方还未正式开放音频内容，但是可以获取到部分信息，内容如下：
-  // { ToUserName: 'gh_d3e07d51b513',
-  // FromUserName: 'oPKu7jgOibOA-De4u8J2RuNKpZRw',
-  // CreateTime: '1359125022',
-  // MsgType: 'voice',
-  // MediaId: 'OMYnpghh8fRfzHL8obuboDN9rmLig4s0xdpoNT6a5BoFZWufbE6srbCKc_bxduzS',
-  // Format: 'amr',
-  // MsgId: '5837397520665436492' }
 }).link(function (message, req, res, next) {
   // message为链接内容
   // { ToUserName: 'gh_d3e07d51b513',
@@ -273,7 +285,7 @@ app.use('/wechat', wechat('some token', wechat.text(function (message, req, res,
 })));
 ```
 
-注意： `text`, `image`, `location`, `voice`, `link`, `event`方法请至少指定一个。
+注意： `text`, `image`, `voice`, `video`, `location`, `link`, `event`方法请至少指定一个。
 这六个方法的设计适用于按内容类型区分处理的场景。如果需要更复杂的场景，请使用第一个例子中的API。
 
 ### 更简化的API设计
@@ -284,9 +296,11 @@ app.use('/wechat', wechat('some token').text(function (message, req, res, next) 
   // TODO
 }).image(function (message, req, res, next) {
   // TODO
-}).location(function (message, req, res, next) {
-  // TODO
 }).voice(function (message, req, res, next) {
+  // TODO
+}).video(function (message, req, res, next) {
+  // TODO
+}).location(function (message, req, res, next) {
   // TODO
 }).link(function (message, req, res, next) {
   // TODO
